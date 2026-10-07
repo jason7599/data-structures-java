@@ -84,7 +84,7 @@ public class LinearProbingHashTable<K, V> implements HashTable<K, V> {
                 : old.length;
 
         allocateSlots(newCapacity);
-        size = used; // removing all tombstones
+        used = size; // removing all tombstones
 
         for (Entry<K, V> entry : old) {
             if (entry != null && !entry.deleted) {
