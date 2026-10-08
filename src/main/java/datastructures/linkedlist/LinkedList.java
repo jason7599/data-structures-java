@@ -1,6 +1,6 @@
 package datastructures.linkedlist;
 
-public interface LinkedList<T> {
+public interface LinkedList<T> extends Iterable<T> {
     T getFirst();
     T getLast();
 
