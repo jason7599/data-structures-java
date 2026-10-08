@@ -1,7 +1,5 @@
 package datastructures.bst;
 
-import java.util.List;
-
 public class UnbalancedBinarySearchTree<T extends Comparable<? super T>> implements BinarySearchTree<T> {
 
     private static class Node<T> {
@@ -46,22 +44,6 @@ public class UnbalancedBinarySearchTree<T extends Comparable<? super T>> impleme
         return cmp < 0 ? find(n.left, data) : find(n.right, data);
     }
 
-    private Node<T> min(Node<T> n) {
-        if (n == null) return null;
-        while (n.left != null) {
-            n = n.left;
-        }
-        return n;
-    }
-
-    private Node<T> max(Node<T> n) {
-        if (n == null) return null;
-        while (n.right != null) {
-            n = n.right;
-        }
-        return n;
-    }
-
     // Largest element < data (or <= data if inclusive), or null.
     private T below(T data, boolean inclusive) {
         Node<T> n = root;
@@ -94,10 +76,7 @@ public class UnbalancedBinarySearchTree<T extends Comparable<? super T>> impleme
         return res;
     }
 
-    // internal record for recursion
-    private record RemoveResult<T>(Node<T> node, int removed) {}
-
-    private RemoveResult<T> remove(Node<T> n, T data, boolean all) {
+    private Node<T> remove(Node<T> n, T data, boolean all) {
         if (n == null) return null; // no match
 
         int cmp = data.compareTo(n.data);
@@ -107,14 +86,13 @@ public class UnbalancedBinarySearchTree<T extends Comparable<? super T>> impleme
             if (!all && n.count > 1) {
                 n.count--;
                 size--;
-                return new RemoveResult<>(n, 1);
+                return n;
             }
 
-            int removed = n.count;
-            size -= removed;
+            size -= n.count;
 
-            if (n.left == null) return new RemoveResult<>(n.right, removed);
-            if (n.right == null) return new RemoveResult<>(n.left, removed);
+            if (n.left == null) return n.right;
+            if (n.right == null) return n.left;
 
             // has both children
             // swap values with inorder successor (smallest in right subtree)
@@ -139,17 +117,13 @@ public class UnbalancedBinarySearchTree<T extends Comparable<? super T>> impleme
                 succParent.left = succ.right;
             }
 
-            return new RemoveResult<>(n, removed);
+            return n;
         }
 
-        RemoveResult<T> r = remove(cmp < 0 ? n.left : n.right, data, all);
+        if (cmp < 0) n.left = remove(n.left, data, all);
+        else n.right = remove(n.right, data, all);
 
-        if (r == null) return null;
-
-        if (cmp < 0) n.left = r.node;
-        else n.right = r.node;
-
-        return new RemoveResult<>(n, r.removed);
+        return n;
     }
 
     // ========================================================
@@ -171,21 +145,13 @@ public class UnbalancedBinarySearchTree<T extends Comparable<? super T>> impleme
     }
 
     @Override
-    public boolean remove(T data) {
-        RemoveResult<T> r = remove(root, data, false);
-        if (r == null) return false;
-
-        root = r.node;
-        return true;
+    public void remove(T data) {
+        root = remove(root, data, false);
     }
 
     @Override
-    public int removeAll(T data) {
-        RemoveResult<T> r = remove(root, data, true);
-        if (r == null) return 0;
-
-        root = r.node;
-        return r.removed;
+    public void removeAll(T data) {
+        root = remove(root, data, true);
     }
 
     @Override
@@ -196,14 +162,22 @@ public class UnbalancedBinarySearchTree<T extends Comparable<? super T>> impleme
 
     @Override
     public T min() {
-        Node<T> n = min(root);
-        return n == null ? null : n.data;
+        if (root == null) return null;
+        Node<T> n = root;
+        while (n.left != null) {
+            n = n.left;
+        }
+        return n.data;
     }
 
     @Override
     public T max() {
-        Node<T> n = max(root);
-        return n == null ? null : n.data;
+        if (root == null) return null;
+        Node<T> n = root;
+        while (n.right != null) {
+            n = n.right;
+        }
+        return n.data;
     }
 
     @Override

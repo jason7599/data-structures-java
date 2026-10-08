@@ -5,8 +5,8 @@ public interface BinarySearchTree<T extends Comparable<? super T>>  {
     boolean contains(T data);
     int count(T data);
 
-    boolean remove(T data); // remove one occurrence
-    int removeAll(T data);  // remove all, return how many were removed
+    void remove(T data);    // remove one occurrence
+    void removeAll(T data); // remove all
     void clear();
 
     T min();
