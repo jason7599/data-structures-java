@@ -1,344 +1,180 @@
 package datastructures.bst;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 abstract class BinarySearchTreeTest {
 
+
     protected abstract <T extends Comparable<? super T>> BinarySearchTree<T> newTree();
 
-    BinarySearchTree<Integer> tree;
-
-    @BeforeEach
-    void setUp() {
-        tree = newTree();
-    }
-
-    private void insertAll(int... values) {
-        for (int v : values) tree.insert(v);
-    }
-
-    // --------------------------------------------------------------- insert
+    // ---------------------------------------------------------------
+    // Stress test: random ops against a TreeMap of counts
+    // ---------------------------------------------------------------
 
     @Test
-    void insertSingle() {
-        tree.insert(5);
-        assertFalse(tree.isEmpty());
-        assertEquals(1, tree.size());
-        assertTrue(tree.contains(5));
-        assertEquals(1, tree.count(5));
-    }
-
-    @Test
-    void insertMultiple() {
-        insertAll(10, 20, 5, 23);
-
-        assertFalse(tree.isEmpty());
-        assertEquals(4, tree.size());
-        assertTrue(tree.contains(10));
-        assertTrue(tree.contains(23));
-        assertTrue(tree.contains(5));
-        assertTrue(tree.contains(20));
-        assertEquals(1, tree.count(20));
-    }
-
-    @Test
-    void containsAbsentValues() {
-        insertAll(50, 30, 70);
-        assertFalse(tree.contains(10));
-        assertFalse(tree.contains(40));
-        assertFalse(tree.contains(90));
-    }
-
-    @Test
-    void duplicatesAreCounted() {
-        insertAll(5, 3, 5, 7, 5, 3);
-        assertEquals(3, tree.count(5));
-        assertEquals(2, tree.count(3));
-        assertEquals(1, tree.count(7));
-        assertEquals(0, tree.count(4));
-        assertEquals(6, tree.size());
-    }
-
-    @Test
-    void sortedInsertionDoesNotBreak() {
-        // Worst case for the unbalanced tree: a linked list.
-        for (int i = 0; i < 2000; i++) tree.insert(i);
-        assertEquals(2000, tree.size());
-        assertEquals(0, tree.min());
-        assertEquals(1999, tree.max());
-        assertTrue(tree.contains(1234));
-    }
-
-    // --------------------------------------------------------------- remove
-
-    @Test
-    void removeLeaf() {
-        insertAll(50, 30, 70);
-        tree.remove(30);
-        assertFalse(tree.contains(30));
-        assertEquals(2, tree.size());
-    }
-
-    @Test
-    void removeNodeWithOnlyLeftChild() {
-        insertAll(50, 30, 20);
-        tree.remove(30);
-        assertEquals(2, tree.size());
-        assertTrue(tree.contains(20));
-    }
-
-    @Test
-    void removeNodeWithOnlyRightChild() {
-        insertAll(50, 30, 40);
-        tree.remove(30);
-        assertEquals(2, tree.size());
-        assertTrue(tree.contains(40));
-    }
-
-    @Test
-    void removeNodeWithTwoChildren() {
-        insertAll(50, 30, 70, 20, 40, 60, 80);
-        tree.remove(30);
-        assertTrue(tree.contains(20));
-        assertTrue(tree.contains(40));
-        assertEquals(6, tree.size());
-    }
-
-    @Test
-    void removeTwoChildrenWhereSuccessorIsRightChild() {
-        insertAll(50, 30, 70, 80);
-        tree.remove(50);
-    }
-
-    @Test
-    void removeTwoChildrenWhereSuccessorIsDeep() {
-        insertAll(50, 30, 70, 60, 80, 55, 65, 57);
-        tree.remove(50);
-    }
-
-    @Test
-    void removeRootWithOneChild() {
-        // Catches forgetting to reassign root.
-        insertAll(10, 20);
-        tree.remove(10);
-        assertFalse(tree.contains(10));
-        assertEquals(20, tree.min());
-    }
-
-    @Test
-    void removeOnlyElement() {
-        tree.insert(1);
-        tree.remove(1);
-        assertTrue(tree.isEmpty());
-    }
-
-    @Test
-    void removeEverythingOneByOne() {
-        int[] values = {50, 30, 70, 20, 40, 60, 80, 35, 65};
-        insertAll(values);
-        for (int i = 0; i < values.length; i++) {
-            tree.remove(values[i]);
-            assertEquals(values.length - i - 1, tree.size());
+    void matchesTreeMapUnderRandomOps() {
+        for (long seed = 0; seed < 20; seed++) {
+            stressWithSeed(seed);
         }
-        assertTrue(tree.isEmpty());
     }
 
-    @Test
-    void removeAbsentValue() {
-        insertAll(50, 30, 70);
-        tree.remove(40);
-        assertEquals(3, tree.size());
-    }
+    private void stressWithSeed(long seed) {
+        Random rng = new Random(seed);
+        BinarySearchTree<Integer> tree = newTree();
+        TreeMap<Integer, Integer> ref = new TreeMap<>();  // value -> count
+        int refSize = 0;
 
-    @Test
-    void removeOneCopyOfDuplicate() {
-        insertAll(5, 5, 5);
-        tree.remove(5);
-        assertEquals(2, tree.count(5));
-        assertEquals(2, tree.size());
-        assertTrue(tree.contains(5));
-    }
+        // Small key range = lots of duplicates and hits on existing keys.
+        // Large key range = mostly unique keys and deeper trees.
+        int keyRange = rng.nextBoolean() ? 50 : 10_000;
+        // At 20% inserts roughly balance removals, so the tree keeps hitting empty.
+        int insertPct = 20 + rng.nextInt(41);
 
-    @Test
-    void removeTwoChildrenWithDuplicateSuccessorKeepsSize() {
-        // The successor (60) has count 3. Its copies move up; they must not
-        // be subtracted from size.
-        insertAll(50, 30, 70, 60, 60, 60, 80);
-        tree.remove(50);
-        assertEquals(6, tree.size());
-        assertEquals(3, tree.count(60));
-    }
+        for (int step = 0; step < 5_000; step++) {
+            String ctx = "seed=" + seed + " step=" + step;
+            int x = rng.nextInt(keyRange);
 
-    @Test
-    void removeTwoChildrenNodeThatHasDuplicates() {
-        insertAll(50, 50, 30, 70);
-        tree.remove(50);
-        assertEquals(1, tree.count(50));
-        assertEquals(3, tree.size());
-    }
-
-    // ------------------------------------------------------------ removeAll
-
-    @Test
-    void removeAllOnTwoChildrenNodeWithDuplicateSuccessor() {
-        insertAll(50, 50, 30, 70, 60, 60);
-        tree.removeAll(50);
-        assertEquals(4, tree.size());
-    }
-
-    // ---------------------------------------------------------------- clear
-
-    @Test
-    void clearEmptiesTree() {
-        insertAll(5, 3, 7, 3);
-        tree.clear();
-        assertTrue(tree.isEmpty());
-        assertEquals(0, tree.size());
-        assertFalse(tree.contains(5));
-    }
-
-    @Test
-    void usableAfterClear() {
-        insertAll(5, 3, 7);
-        tree.clear();
-        tree.insert(42);
-        assertEquals(1, tree.size());
-    }
-
-    // -------------------------------------------------------------- min/max
-
-    @Test
-    void minMax() {
-        insertAll(50, 30, 70, 20, 80);
-        assertEquals(20, tree.min());
-        assertEquals(80, tree.max());
-    }
-
-    @Test
-    void minMaxAfterRemoving() {
-        insertAll(50, 30, 70, 20, 80);
-        tree.remove(20);
-        tree.remove(80);
-        assertEquals(30, tree.min());
-        assertEquals(70, tree.max());
-    }
-
-    // ------------------------------------------------- floor/ceiling/etc.
-
-    @Test
-    void floor() {
-        insertAll(30, 10, 50, 20, 40);
-        assertEquals(20, tree.floor(25));
-        assertEquals(20, tree.floor(20));   // inclusive
-        assertEquals(50, tree.floor(99));
-        assertNull(tree.floor(5));
-    }
-
-    @Test
-    void ceiling() {
-        insertAll(30, 10, 50, 20, 40);
-        assertEquals(30, tree.ceiling(25));
-        assertEquals(30, tree.ceiling(30)); // inclusive
-        assertEquals(10, tree.ceiling(-5));
-        assertNull(tree.ceiling(55));
-    }
-
-    @Test
-    void lower() {
-        insertAll(30, 10, 50, 20, 40);
-        assertEquals(20, tree.lower(25));
-        assertEquals(10, tree.lower(20));   // strict
-        assertNull(tree.lower(10));
-        assertEquals(50, tree.lower(99));
-    }
-
-    @Test
-    void higher() {
-        insertAll(30, 10, 50, 20, 40);
-        assertEquals(30, tree.higher(25));
-        assertEquals(30, tree.higher(20));  // strict
-        assertNull(tree.higher(50));
-        assertEquals(10, tree.higher(-5));
-    }
-
-    // -------------------------------------------------- randomized model test
-
-    /**
-     * Runs random operations against both the tree and a TreeMap of counts,
-     * checking they agree after every step. Fixed seed, so failures reproduce.
-     */
-    @Test
-    void randomOperationsMatchModel() {
-        Random rnd = new Random(42);
-        TreeMap<Integer, Integer> model = new TreeMap<>();
-        int modelSize = 0;
-
-        for (int step = 0; step < 10_000; step++) {
-            int x = rnd.nextInt(40);
-            int op = rnd.nextInt(100);
-            String desc;
-
-            if (op < 50) {
-                desc = "insert(" + x + ")";
-                tree.insert(x);
-                model.merge(x, 1, Integer::sum);
-                modelSize++;
-            } else if (op < 80) {
-                desc = "remove(" + x + ")";
-                boolean expected = model.containsKey(x);
-                tree.remove(x);
-                if (expected) {
-                    model.computeIfPresent(x, (k, c) -> c == 1 ? null : c - 1);
-                    modelSize--;
-                }
-            } else if (op < 99) {
-                desc = "removeAll(" + x + ")";
-                int expected = model.getOrDefault(x, 0);
-                tree.removeAll(x);
-                model.remove(x);
-                modelSize -= expected;
-            } else {
-                desc = "clear()";
+            if (rng.nextInt(500) == 0) {
                 tree.clear();
-                model.clear();
-                modelSize = 0;
+                ref.clear();
+                refSize = 0;
+            } else {
+                int roll = rng.nextInt(100);
+
+                if (roll < insertPct) {
+                    tree.insert(x);
+                    ref.merge(x, 1, Integer::sum);
+                    refSize++;
+                } else if (roll < insertPct + 15) {
+                    tree.remove(x);
+                    Integer c = ref.get(x);
+                    if (c != null) {
+                        if (c == 1) ref.remove(x);
+                        else ref.put(x, c - 1);
+                        refSize--;
+                    }
+                } else if (roll < insertPct + 20) {
+                    tree.removeAll(x);
+                    Integer c = ref.remove(x);
+                    if (c != null) refSize -= c;
+                } else {
+                    switch (rng.nextInt(8)) {
+                        case 0 -> assertEquals(ref.containsKey(x), tree.contains(x), ctx + " contains(" + x + ")");
+                        case 1 -> assertEquals(ref.getOrDefault(x, 0), tree.count(x), ctx + " count(" + x + ")");
+                        case 2 -> assertEquals(ref.floorKey(x), tree.floor(x), ctx + " floor(" + x + ")");
+                        case 3 -> assertEquals(ref.ceilingKey(x), tree.ceiling(x), ctx + " ceiling(" + x + ")");
+                        case 4 -> assertEquals(ref.lowerKey(x), tree.lower(x), ctx + " lower(" + x + ")");
+                        case 5 -> assertEquals(ref.higherKey(x), tree.higher(x), ctx + " higher(" + x + ")");
+                        case 6 -> assertEquals(ref.isEmpty() ? null : ref.firstKey(), tree.min(), ctx + " min");
+                        default -> assertEquals(ref.isEmpty() ? null : ref.lastKey(), tree.max(), ctx + " max");
+                    }
+                }
             }
 
-            String where = at(step, desc);
-            assertEquals(modelSize, tree.size(), where);
-            assertEquals(modelSize == 0, tree.isEmpty(), where);
-            assertEquals(model.getOrDefault(x, 0), tree.count(x), where);
-            assertEquals(model.containsKey(x), tree.contains(x), where);
-
-            int probe = rnd.nextInt(50) - 5;
-            assertEquals(model.floorKey(probe), tree.floor(probe), where + " floor(" + probe + ")");
-            assertEquals(model.ceilingKey(probe), tree.ceiling(probe), where + " ceiling(" + probe + ")");
-            assertEquals(model.lowerKey(probe), tree.lower(probe), where + " lower(" + probe + ")");
-            assertEquals(model.higherKey(probe), tree.higher(probe), where + " higher(" + probe + ")");
-
-            if (!model.isEmpty()) {
-                assertEquals(model.firstKey(), tree.min(), where);
-                assertEquals(model.lastKey(), tree.max(), where);
-            }
+            assertEquals(refSize, tree.size(), ctx + " size");
+            assertEquals(refSize == 0, tree.isEmpty(), ctx + " isEmpty");
+            assertEquals(expand(ref), toList(tree), ctx + " contents");
         }
     }
 
-    private static String at(int step, String desc) {
-        return "step " + step + ": " + desc;
+    // ---------------------------------------------------------------
+    // Sorted input: worst case for naive BSTs, rotation workout for AVL
+    // ---------------------------------------------------------------
+
+    @Test
+    void ascendingThenDescendingInsertsStaySorted() {
+        BinarySearchTree<Integer> tree = newTree();
+        List<Integer> expected = new ArrayList<>();
+
+        for (int i = 0; i < 2_000; i++) {
+            tree.insert(i);
+            expected.add(i);
+        }
+        assertEquals(expected, toList(tree));
+
+        tree.clear();
+        for (int i = 1_999; i >= 0; i--) {
+            tree.insert(i);
+        }
+        assertEquals(expected, toList(tree));
+
+        // knock out every other element, from the middle outward-ish
+        for (int i = 0; i < 2_000; i += 2) {
+            tree.remove(i);
+        }
+        expected.removeIf(v -> v % 2 == 0);
+        assertEquals(expected, toList(tree));
+        assertEquals(expected.size(), tree.size());
     }
 
-    private static List<Integer> expand(Map<Integer, Integer> counts) {
-        List<Integer> out = new ArrayList<>();
-        counts.forEach((k, c) -> { for (int i = 0; i < c; i++) out.add(k); });
+    // ---------------------------------------------------------------
+    // Iterator contract
+    // ---------------------------------------------------------------
+
+    @Test
+    void emptyTreeIteratesNothing() {
+        for (var ignored : newTree()) {
+            fail("should not iterate over an empty tree");
+        }
+    }
+
+    @Test
+    void duplicatesAreYieldedCountTimes() {
+        BinarySearchTree<Integer> tree = newTree();
+        tree.insert(5);
+        tree.insert(3);
+        tree.insert(5);
+        tree.insert(5);
+
+        assertEquals(List.of(3, 5, 5, 5), toList(tree));
+    }
+
+    @Test
+    void nextThrowsWhenExhausted() {
+        BinarySearchTree<Integer> tree = newTree();
+        tree.insert(1);
+
+        Iterator<Integer> it = tree.iterator();
+        assertEquals(1, it.next());
+        assertFalse(it.hasNext());
+        assertThrows(NoSuchElementException.class, it::next);
+    }
+
+    @Test
+    void hasNextDoesNotAdvance() {
+        BinarySearchTree<Integer> tree = newTree();
+        tree.insert(2);
+        tree.insert(1);
+
+        Iterator<Integer> it = tree.iterator();
+        for (int i = 0; i < 5; i++) assertTrue(it.hasNext());
+        assertEquals(1, it.next());
+        assertEquals(2, it.next());
+        assertFalse(it.hasNext());
+    }
+
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+
+    /** Goes through for-each on purpose, so every contents check also tests the iterator. */
+    private static <T> List<T> toList(Iterable<T> iterable) {
+        List<T> out = new ArrayList<>();
+        for (T t : iterable) out.add(t);
         return out;
     }
+
+    /** {3=1, 5=3} -> [3, 5, 5, 5] */
+    private static List<Integer> expand(TreeMap<Integer, Integer> counts) {
+        List<Integer> out = new ArrayList<>();
+        counts.forEach((value, count) -> {
+            for (int i = 0; i < count; i++) out.add(value);
+        });
+        return out;
+    }
+
 }
