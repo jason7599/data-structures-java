@@ -116,11 +116,6 @@ implements BinarySearchTree<T> {
     }
 
     @Override
-    public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    @Override
     public Iterator<T> iterator() {
         return new Iterator<T>() {
             private final Deque<N> stack = new ArrayDeque<>();

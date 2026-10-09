@@ -17,5 +17,7 @@ public interface BinarySearchTree<T extends Comparable<? super T>> extends Itera
     T higher(T data);   // smallest > data or null
 
     int size();         // total count, not distinct
-    boolean isEmpty();
+    default boolean isEmpty() {
+        return size() == 0;
+    }
 }

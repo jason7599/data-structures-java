@@ -127,12 +127,6 @@ public class LinkedListImpl<T> implements LinkedList<T> {
         return size;
     }
 
-    @Override
-    public boolean isEmpty() {
-        // equal to head == null or tail == null
-        return size == 0;
-    }
-
     // Let GC take care
     @Override
     public void clear() {

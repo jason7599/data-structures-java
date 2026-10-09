@@ -102,11 +102,6 @@ public class DynamicArrayImpl<T> implements DynamicArray<T> {
     }
 
     @Override
-    public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    @Override
     public void clear() {
         items = new Object[DEFAULT_INIT_CAPACITY];
         size = 0;

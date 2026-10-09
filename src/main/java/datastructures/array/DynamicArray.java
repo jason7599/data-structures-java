@@ -16,7 +16,9 @@ public interface DynamicArray<T> extends Iterable<T> {
     T remove(int index);
 
     int size();
-    boolean isEmpty();
+    default boolean isEmpty() {
+        return size() == 0;
+    }
     void clear();
 
     int capacity();
