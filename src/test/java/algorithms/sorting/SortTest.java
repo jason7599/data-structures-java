@@ -35,7 +35,8 @@ class SortTest {
                 sort(new MergeSort(), 10_000_000),
                 sort(new QuickSort(QuickSort.PivotStrategy.LAST), 10_000_000),
                 sort(new QuickSort(QuickSort.PivotStrategy.RANDOM), 10_000_000),
-                sort(new QuickSort(QuickSort.PivotStrategy.MEDIAN_OF_THREE), 10_000_000)
+                sort(new QuickSort(QuickSort.PivotStrategy.MEDIAN_OF_THREE), 10_000_000),
+                sort(new HeapSort(), 10_000_000)
         );
     }
 

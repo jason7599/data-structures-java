@@ -83,6 +83,6 @@ public class QuickSort implements Sort {
 
     @Override
     public String name() {
-        return getClass().getSimpleName() + "(" + strategy.name() + ")";
+        return Sort.super.name() + "(" + strategy.name() + ")";
     }
 }
