@@ -6,6 +6,8 @@ public interface Sort {
 
     <T> void sort(T[] arr, Comparator<? super T> comparator);
 
+    boolean isStable();
+
     default <T extends Comparable<? super T>> void sort(T[] arr) {
         sort(arr, Comparator.naturalOrder());
     }

@@ -2,27 +2,63 @@ package algorithms.sorting;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Random;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-abstract class SortTest {
+/**
+ * Runs every test below once per sort listed in sorts().
+ * Adding a new sort = adding one line there. Sorts must be stateless,
+ * since one instance is shared by all tests for that sort.
+ */
+@ParameterizedClass
+@MethodSource("sorts")
+class SortTest {
 
-    protected abstract Sort newSort();
+    /** Every sort under test, with the largest benchmark size it finishes in reasonable time. */
+    static Stream<Arguments> sorts() {
+        return Stream.of(
+                sort(new BogoSort(), 10),
+                sort(new BubbleSort(), 10_000),
+                sort(new InsertionSort(), 100_000),
+                sort(new SelectionSort(), 10_000),
+                sort(new ShellSort(), 1_000_000)
+        );
+    }
 
-    static final int BENCHMARK_SIZE = 10_000;
+    private static Arguments sort(Sort sort, int maxBenchmarkSize) {
+        return Arguments.argumentSet(sort.name(), sort, maxBenchmarkSize);
+    }
+
+    @Parameter(0)
+    Sort sort;
+
+    @Parameter(1)
+    int maxBenchmarkSize;
+
     static final long SEED = 666;
 
-    Sort sort;
     Random rng;
 
     @BeforeEach
     void setUp() {
-        sort = newSort();
         rng = new Random(SEED);
     }
+
+    // ---- Edge cases ----
 
     @Test
     void empty() {
@@ -44,13 +80,50 @@ abstract class SortTest {
         assertSort(new Integer[]{2, 2, 2});
     }
 
+    // ---- Stability ----
+
+    record Item(int key, int originalIndex) {}
+
+    @Test
+    void stable() {
+        assumeTrue(sort.isStable(), () -> sort.name() + " does not claim to be stable");
+
+        // Many duplicate keys; originalIndex tells equal items apart.
+        Item[] items = new Item[1_000];
+        for (int i = 0; i < items.length; i++) {
+            items[i] = new Item(rng.nextInt(10), i);
+        }
+
+        sort.sort(items, Comparator.comparingInt(Item::key));
+
+        for (int i = 1; i < items.length; i++) {
+            Item prev = items[i - 1];
+            Item cur = items[i];
+            final int pos = i;
+            assertTrue(prev.key() <= cur.key(),
+                    () -> sort.name() + " is not sorted at position " + pos);
+            if (prev.key() == cur.key()) {
+                assertTrue(prev.originalIndex() < cur.originalIndex(),
+                        () -> sort.name() + " reordered equal keys at position " + pos);
+            }
+        }
+    }
+
+    // ---- Benchmark (also checks correctness on bigger inputs) ----
+
+    static final int BENCHMARK_SIZE =
+            Integer.parseInt(System.getProperty("benchmark.size", "10_000").replace("_", ""));
+
     @Test
     void benchmark() {
-        StringBuilder header = new StringBuilder(String.format("%-16s", "ms"));
-        StringBuilder row = new StringBuilder(String.format("%-16s", sort.name()));
+        final int n = BENCHMARK_SIZE;
+        assumeTrue(n <= maxBenchmarkSize, () -> "too slow for " + sort.name() + " at n = " + n);
+
+        StringBuilder header = new StringBuilder(String.format("%-28s", "ms"));
+        StringBuilder row = new StringBuilder(String.format("%-28s", sort.name() + String.format(" (n=%,d)", n)));
 
         for (InputShape shape : InputShape.values()) {
-            Integer[] arr = shape.generate(BENCHMARK_SIZE, rng);
+            Integer[] arr = shape.generate(n, rng);
 
             Integer[] expected = arr.clone();
             Arrays.sort(expected);
@@ -67,6 +140,8 @@ abstract class SortTest {
 
         System.out.println(header + "\n" + row + "\n");
     }
+
+    // ---- Helpers ----
 
     enum InputShape {
         RANDOM, SORTED, REVERSED, FEW_UNIQUE, NEARLY_SORTED;
@@ -98,7 +173,6 @@ abstract class SortTest {
         sort.sort(actual);
 
         assertArrayEquals(expected, actual,
-                () -> sort.name() + " failed");
+                () -> sort.name() + " failed on " + Arrays.toString(arr));
     }
-
 }

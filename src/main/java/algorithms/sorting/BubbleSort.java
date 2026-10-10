@@ -20,4 +20,9 @@ public class BubbleSort implements Sort {
             if (!swapped) break;
         }
     }
+
+    @Override
+    public boolean isStable() {
+        return true;
+    }
 }

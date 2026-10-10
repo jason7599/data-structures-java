@@ -27,6 +27,11 @@ public class BogoSort implements Sort {
         throw new RuntimeException("Pants pooed");
     }
 
+    @Override
+    public boolean isStable() {
+        return false;
+    }
+
     private <T> void fisherYates(T[] arr) {
         for (int i = 0; i < arr.length - 1; i++) {
             Sort.swap(arr, i, ThreadLocalRandom.current().nextInt(i, arr.length));

@@ -16,4 +16,9 @@ public class SelectionSort implements Sort {
             Sort.swap(arr, i, min);
         }
     }
+
+    @Override
+    public boolean isStable() {
+        return false;
+    }
 }
