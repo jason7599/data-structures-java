@@ -32,7 +32,10 @@ class SortTest {
                 sort(new InsertionSort(), 100_000),
                 sort(new SelectionSort(), 10_000),
                 sort(new ShellSort(), 1_000_000),
-                sort(new MergeSort(), 10_000_000)
+                sort(new MergeSort(), 10_000_000),
+                sort(new QuickSort(QuickSort.PivotStrategy.LAST), 10_000_000),
+                sort(new QuickSort(QuickSort.PivotStrategy.RANDOM), 10_000_000),
+                sort(new QuickSort(QuickSort.PivotStrategy.MEDIAN_OF_THREE), 10_000_000)
         );
     }
 
@@ -118,8 +121,8 @@ class SortTest {
         final int n = BENCHMARK_SIZE;
         assumeTrue(n <= maxBenchmarkSize, () -> "too slow for " + sort.name() + " at n = " + n);
 
-        StringBuilder header = new StringBuilder(String.format("%-28s", "ms"));
-        StringBuilder row = new StringBuilder(String.format("%-28s", sort.name() + String.format(" (n=%,d)", n)));
+        StringBuilder header = new StringBuilder(String.format("%-50s", "ms"));
+        StringBuilder row = new StringBuilder(String.format("%-50s", sort.name() + String.format(" (n=%,d)", n)));
 
         for (InputShape shape : InputShape.values()) {
             Integer[] arr = shape.generate(n, rng);
