@@ -37,7 +37,8 @@ implements SortedMultiset<T> {
         T res = null;
         while (n != null) {
             int cmp = data.compareTo(n.data);
-            if (cmp > 0 || (inclusive && cmp == 0)) {
+            if (inclusive && cmp == 0) return n.data;
+            if (cmp > 0) {
                 res = n.data;   // candidate; look for a bigger one
                 n = n.right;
             } else {
@@ -53,7 +54,8 @@ implements SortedMultiset<T> {
         T res = null;
         while (n != null) {
             int cmp = data.compareTo(n.data);
-            if (cmp < 0 || (inclusive && cmp == 0)) {
+            if (inclusive && cmp == 0) return n.data;
+            if (cmp < 0) {
                 res = n.data;   // candidate; look for a smaller one
                 n = n.left;
             } else {
