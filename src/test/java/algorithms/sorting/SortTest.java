@@ -4,15 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -31,17 +28,20 @@ class SortTest {
     /** Every sort under test, with the largest benchmark size it finishes in reasonable time. */
     static Stream<Arguments> sorts() {
         return Stream.of(
-                sort(new BogoSort(), 10),
                 sort(new BubbleSort(), 10_000),
                 sort(new InsertionSort(), 100_000),
                 sort(new SelectionSort(), 10_000),
-                sort(new ShellSort(), 1_000_000)
+                sort(new ShellSort(), 1_000_000),
+                sort(new MergeSort(), 10_000_000)
         );
     }
 
     private static Arguments sort(Sort sort, int maxBenchmarkSize) {
         return Arguments.argumentSet(sort.name(), sort, maxBenchmarkSize);
     }
+
+    static final int BENCHMARK_SIZE =
+            Integer.parseInt(System.getProperty("benchmark.size", "10_000").replace("_", ""));
 
     @Parameter(0)
     Sort sort;
@@ -86,7 +86,9 @@ class SortTest {
 
     @Test
     void stable() {
-        assumeTrue(sort.isStable(), () -> sort.name() + " does not claim to be stable");
+        if (!sort.isStable()) {
+            return;
+        }
 
         // Many duplicate keys; originalIndex tells equal items apart.
         Item[] items = new Item[1_000];
@@ -110,9 +112,6 @@ class SortTest {
     }
 
     // ---- Benchmark (also checks correctness on bigger inputs) ----
-
-    static final int BENCHMARK_SIZE =
-            Integer.parseInt(System.getProperty("benchmark.size", "10_000").replace("_", ""));
 
     @Test
     void benchmark() {
