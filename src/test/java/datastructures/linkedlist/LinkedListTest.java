@@ -8,7 +8,7 @@ import java.util.NoSuchElementException;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LinkedListTest {
-    LinkedList<Integer> list = new LinkedListImpl<>();
+    LinkedList<Integer> list = new LinkedList<>();
 
     @BeforeEach
     void setUp() {

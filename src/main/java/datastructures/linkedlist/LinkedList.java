@@ -1,21 +1,153 @@
 package datastructures.linkedlist;
 
-public interface LinkedList<T> extends Iterable<T> {
-    T getFirst();
-    T getLast();
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-    void pushFirst(T data);
-    void pushLast(T data);
+public class LinkedList<T> {
 
-    T popFirst();
-    T popLast();
+    private static class Node<T> {
+        final T data;
+        Node<T> next;
+        Node<T> prev;
 
-    T get(int index);
+        Node(T data) {
+            this.data = data;
+        }
+    }
 
-    void clear();
+    private Node<T> head;
+    private Node<T> tail;
+    private int size;
 
-    int size();
-    default boolean isEmpty() {
+    public T getFirst() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return head.data;
+    }
+
+    public T getLast() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return tail.data;
+    }
+
+    public void pushFirst(T data) {
+        Node<T> first = new Node<>(data);
+        if (isEmpty()) {
+            head = tail = first;
+        } else {
+            first.next = head;
+            head.prev = first;
+            head = first;
+        }
+        size++;
+    }
+
+    public void pushLast(T data) {
+        Node<T> last = new Node<>(data);
+        if (isEmpty()) {
+            head = tail = last;
+        } else {
+            tail.next = last;
+            last.prev = tail;
+            tail = last;
+        }
+        size++;
+    }
+
+    public T popFirst() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
+
+        T data = head.data;
+
+        if (head == tail) {
+            clear();
+        } else {
+            // head != tail ensures head.next exists
+            head = head.next;
+            head.prev = null;
+            size--;
+        }
+
+        return data;
+    }
+
+    public T popLast() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
+
+        T data = tail.data;
+
+        if (head == tail) {
+            clear();
+        } else {
+            tail = tail.prev;
+            tail.next = null;
+            size--;
+        }
+
+        return data;
+    }
+
+    public T get(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException();
+        }
+
+        Node<T> node;
+        if (index < size / 2) {
+            node = head;
+            for (int i = 0; i < index; i++) {
+                node = node.next;
+            }
+        } else {
+            node = tail;
+            for (int i = size - 1; i > index; i--) {
+                node = node.prev;
+            }
+        }
+
+        return node.data;
+    }
+
+    public int size() {
+        return size;
+    }
+
+    public boolean isEmpty() {
         return size() == 0;
+    }
+
+    // Let GC take care
+    public void clear() {
+        head = null;
+        tail = null;
+        size = 0;
+    }
+
+    public Iterator<T> iterator() {
+        return new Iterator<T>() {
+            private Node<T> current = head;
+
+            @Override
+            public boolean hasNext() {
+                return current != null;
+            }
+
+            @Override
+            public T next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                T data = current.data;
+                current = current.next;
+                return data;
+            }
+        };
     }
 }

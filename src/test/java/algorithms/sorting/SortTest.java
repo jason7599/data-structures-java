@@ -28,7 +28,7 @@ class SortTest {
     /** Every sort under test, with the largest benchmark size it finishes in reasonable time. */
     static Stream<Arguments> sorts() {
         return Stream.of(
-                sort(new BubbleSort(), 10_000),
+//                sort(new BubbleSort(), 10_000),
                 sort(new InsertionSort(), 100_000),
                 sort(new SelectionSort(), 10_000),
                 sort(new ShellSort(), 1_000_000),

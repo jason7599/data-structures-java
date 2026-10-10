@@ -1,11 +1,13 @@
 package datastructures.bst;
 
+import datastructures.sortedmultiset.SortedMultiset;
+
 import java.util.*;
 
 public abstract class AbstractBinarySearchTree<
         T extends Comparable<? super T>,
         N extends AbstractNode<T, N>>
-implements BinarySearchTree<T> {
+implements SortedMultiset<T> {
 
     protected N root;
     protected int size;
@@ -117,7 +119,7 @@ implements BinarySearchTree<T> {
 
     @Override
     public Iterator<T> iterator() {
-        return new Iterator<T>() {
+        return new Iterator<>() {
             private final Deque<N> stack = new ArrayDeque<>();
             private N current;
             private int remaining; // copies current.data to support multiple elements

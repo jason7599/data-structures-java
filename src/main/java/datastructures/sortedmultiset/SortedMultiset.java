@@ -1,6 +1,6 @@
-package datastructures.bst;
+package datastructures.sortedmultiset;
 
-public interface BinarySearchTree<T extends Comparable<? super T>> extends Iterable<T> {
+public interface SortedMultiset<T extends Comparable<? super T>> extends Iterable<T> {
     void insert(T data);
     boolean contains(T data);
     int count(T data);
